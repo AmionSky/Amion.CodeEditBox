@@ -13,9 +13,10 @@ namespace Amion.CodeEditBox.Document
         public event EventHandler<TextChangedEventArgs> TextChanged;
         public event EventHandler<SelectionChangedEventArgs> SelectionChanged;
 
-        public CoreTextRange Selection { get => _selection; }
+        public TextSelection Selection { get; }
         public string Text { get => _text; }
-        public bool ExtendingLeft { get => _extendingLeft; set => _extendingLeft = value; }
+
+        public TextActions Actions { get; }
 
         // The TextEditContext lets us communicate with the input system.
         CoreTextEditContext _editContext;
@@ -23,15 +24,6 @@ namespace Amion.CodeEditBox.Document
         // We will use a plain text string to represent the
         // content of the custom text edit control.
         string _text = string.Empty;
-
-        // If the _selection starts and ends at the same point,
-        // then it represents the location of the caret (insertion point).
-        CoreTextRange _selection;
-
-        // If there is a nonempty selection, then _extendingLeft is true if the user
-        // is using shift+arrow to adjust the starting point of the selection,
-        // or false if the user is adjusting the ending point of the selection.
-        bool _extendingLeft = false;
 
         public TextDocument(CoreTextEditContext editContext)
         {
@@ -48,6 +40,10 @@ namespace Amion.CodeEditBox.Document
             // The system raises this event when it wants the edit control
             // to apply formatting on a range of text.
             _editContext.FormatUpdating += EditContext_FormatUpdating;
+
+            Actions = new TextActions(this);
+            Selection = new TextSelection(this, OnSelectionChanged);
+
         }
 
         public void ReplaceText(CoreTextRange modifiedRange, string text)
@@ -57,56 +53,18 @@ namespace Amion.CodeEditBox.Document
                 text + _text.Substring(modifiedRange.EndCaretPosition);
 
             // Move the caret to the end of the replacement text.
-            _selection.StartCaretPosition = modifiedRange.StartCaretPosition + text.Length;
-            _selection.EndCaretPosition = _selection.StartCaretPosition;
-
-            // Update the selection of the edit context. There is no need to notify the system
-            // of the selection change because we are going to call NotifyTextChanged soon.
-            SetSelection(_selection);
+            Selection.SetPosition(modifiedRange.StartCaretPosition + text.Length);
 
             // Let the CoreTextEditContext know what changed.
-            _editContext.NotifyTextChanged(modifiedRange, text.Length, _selection);
+            _editContext.NotifyTextChanged(modifiedRange, text.Length, Selection.Range);
 
             // Raise text changed event.
-            OnTextChanged(new TextChangedEventArgs(modifiedRange, text.Length, _selection));
+            OnTextChanged(new TextChangedEventArgs(modifiedRange, text.Length, Selection.Range));
         }
 
-        public bool HasSelection()
+        public int Length()
         {
-            return _selection.StartCaretPosition != _selection.EndCaretPosition;
-        }
-
-        // Change the selection without notifying CoreTextEditContext of the new selection.
-        public void SetSelection(CoreTextRange selection)
-        {
-            // Modify the internal selection.
-            _selection = selection;
-
-            // Raise selection changed event.
-            OnSelectionChanged(new SelectionChangedEventArgs(selection));
-        }
-
-        // Change the selection and notify CoreTextEditContext of the new selection.
-        public void SetSelectionAndNotify(CoreTextRange selection)
-        {
-            SetSelection(selection);
-            _editContext.NotifySelectionChanged(_selection);
-        }
-
-        // Adjust the active endpoint of the selection in the specified direction.
-        public void AdjustSelectionEndpoint(int direction)
-        {
-            CoreTextRange range = _selection;
-            if (_extendingLeft)
-            {
-                range.StartCaretPosition = Math.Max(0, range.StartCaretPosition + direction);
-            }
-            else
-            {
-                range.EndCaretPosition = Math.Min(_text.Length, range.EndCaretPosition + direction);
-            }
-
-            SetSelectionAndNotify(range);
+            return _text.Length;
         }
 
         #region EditContext
@@ -124,7 +82,7 @@ namespace Amion.CodeEditBox.Document
         private void EditContext_SelectionRequested(CoreTextEditContext sender, CoreTextSelectionRequestedEventArgs args)
         {
             CoreTextSelectionRequest request = args.Request;
-            request.Selection = _selection;
+            request.Selection = Selection.Range;
         }
 
         private void EditContext_TextUpdating(CoreTextEditContext sender, CoreTextTextUpdatingEventArgs args)
@@ -143,9 +101,8 @@ namespace Amion.CodeEditBox.Document
             //? Modify the current selection.
             //? newSelection.EndCaretPosition = newSelection.StartCaretPosition;
 
-            // Update the selection of the edit context. There is no need to notify the system
-            // because the system itself changed the selection.
-            SetSelection(newSelection);
+            // Update the selection of the edit context.
+            Selection.SetRange(newSelection);
         }
 
         private void EditContext_SelectionUpdating(CoreTextEditContext sender, CoreTextSelectionUpdatingEventArgs args)
@@ -153,9 +110,8 @@ namespace Amion.CodeEditBox.Document
             // Set the new selection to the value specified by the system.
             CoreTextRange range = args.Selection;
 
-            // Update the selection of the edit context. There is no need to notify the system
-            // because the system itself changed the selection.
-            SetSelection(range);
+            // Update the selection of the edit context.
+            Selection.SetRange(range);
         }
 
         private void EditContext_FormatUpdating(CoreTextEditContext sender, CoreTextFormatUpdatingEventArgs args)
@@ -172,9 +128,12 @@ namespace Amion.CodeEditBox.Document
             TextChanged?.Invoke(this, args);
         }
 
-        private void OnSelectionChanged(SelectionChangedEventArgs args)
+        private void OnSelectionChanged()
         {
-            SelectionChanged?.Invoke(this, args);
+            CoreTextRange selection = Selection.Range;
+
+            SelectionChanged?.Invoke(this, new SelectionChangedEventArgs(selection));
+            _editContext.NotifySelectionChanged(selection);
         }
 
         #endregion

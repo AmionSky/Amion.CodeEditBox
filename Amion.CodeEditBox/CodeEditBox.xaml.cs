@@ -45,9 +45,10 @@ namespace Amion.CodeEditBox
         public CodeEditBox()
         {
             InitializeComponent();
-
             Unloaded += CodeEditBox_Unloaded;
 
+            // Make the control focusable
+            IsTabStop = true;
 
             // The CoreTextEditContext processes text input, but other keys are
             // the apps's responsibility.
@@ -90,7 +91,7 @@ namespace Amion.CodeEditBox
 
             // Focus state reporter
             // TODO: remove this
-            IsTabStop = true;
+            
             GotFocus += CodeEditBox_FocusChanged;
             LostFocus += CodeEditBox_FocusChanged;
             CodeEditBox_FocusChanged(this, null);
@@ -124,62 +125,14 @@ namespace Amion.CodeEditBox
             OrigFocus.Text = FocusState.ToString();
         }
 
-        #region Focus
-        void SetInternalFocus()
-        {
-            if (!_internalFocus)
-            {
-                // Update internal notion of focus.
-                _internalFocus = true;
-
-                // Update the UI.
-                UpdateTextUI();
-                UpdateFocusUI();
-
-                // Notify the CoreTextEditContext that the edit context has focus,
-                // so it should start processing text input.
-                _editContext.NotifyFocusEnter();
-            }
-
-            //x Ask the software keyboard to show.  The system will ultimately decide if it will show.
-            //x For example, it will not show if there is a keyboard attached.
-            //x _inputPane.TryShow();
-
-        }
-
-        void RemoveInternalFocus()
-        {
-            if (_internalFocus)
-            {
-                //Notify the system that this edit context is no longer in focus
-                _editContext.NotifyFocusLeave();
-
-                RemoveInternalFocusWorker();
-            }
-        }
-
-        void RemoveInternalFocusWorker()
-        {
-            //Update the internal notion of focus
-            _internalFocus = false;
-
-            //x Ask the software keyboard to dismiss.
-            //x _inputPane.TryHide();
-
-            // Update our UI.
-            UpdateTextUI();
-            UpdateFocusUI();
-        }
-        #endregion
-
         private void UpdateTextUI()
         {
             // The raw materials we have are a string and information about where
             // the caret/selection is. We can render the control any way we like.
-            var selection = _textDocument.Selection;
+            var selection = _textDocument.Selection.Range;
 
             BeforeSelectionText.Text = _textDocument.Text.Substring(0, selection.StartCaretPosition);
-            if (_textDocument.HasSelection())
+            if (_textDocument.Selection.HasSelection())
             {
                 // There is a selection. Draw that.
                 CaretText.Visibility = Visibility.Collapsed;
@@ -212,115 +165,6 @@ namespace Amion.CodeEditBox
 
         #region Events
 
-        private void CoreWindow_KeyDown(CoreWindow sender, KeyEventArgs args)
-        {
-            // Do not process keyboard input if the custom edit control does not
-            // have focus.
-            if (!_internalFocus)
-            {
-                return;
-            }
-
-            // This holds the range we intend to operate on, or which we intend
-            // to become the new selection. Start with the current selection.
-            CoreTextRange range = _textDocument.Selection;
-
-            //! For the purpose of this sample, we will support only the left and right
-            //! arrow keys and the backspace key. A more complete text edit control
-            //! would also handle keys like Home, End, and Delete, as well as
-            //! hotkeys like Ctrl+V to paste.
-            //!
-            //! Note that this sample does not properly handle surrogate pairs
-            //! nor does it handle grapheme clusters.
-
-            switch (args.VirtualKey)
-            {
-                // Backspace
-                case VirtualKey.Back:
-                    // If there is a selection, then delete the selection.
-                    if (_textDocument.HasSelection())
-                    {
-                        // Set the text in the selection to nothing.
-                        _textDocument.ReplaceText(range, "");
-                    }
-                    else
-                    {
-                        // Delete the character to the left of the caret, if one exists,
-                        // by creating a range that encloses the character to the left
-                        // of the caret, and setting the contents of that range to nothing.
-                        range.StartCaretPosition = Math.Max(0, range.StartCaretPosition - 1);
-                        _textDocument.ReplaceText(range, "");
-                    }
-                    break;
-
-                // Left arrow
-                case VirtualKey.Left:
-                    // If the shift key is down, then adjust the size of the selection.
-                    if (_coreWindow.GetKeyState(VirtualKey.Shift).HasFlag(CoreVirtualKeyStates.Down))
-                    {
-                        // If this is the start of a selection, then remember which edge we are adjusting.
-                        if (!_textDocument.HasSelection())
-                        {
-                            _textDocument.ExtendingLeft = true;
-                        }
-
-                        // Adjust the selection and notify CoreTextEditContext.
-                        _textDocument.AdjustSelectionEndpoint(-1);
-                    }
-                    else
-                    {
-                        // The shift key is not down. If there was a selection, then snap the
-                        // caret at the left edge of the selection.
-                        if (_textDocument.HasSelection())
-                        {
-                            range.EndCaretPosition = range.StartCaretPosition;
-                            _textDocument.SetSelectionAndNotify(range);
-                        }
-                        else
-                        {
-                            // There was no selection. Move the caret left one code unit if possible.
-                            range.StartCaretPosition = Math.Max(0, range.StartCaretPosition - 1);
-                            range.EndCaretPosition = range.StartCaretPosition;
-                            _textDocument.SetSelectionAndNotify(range);
-                        }
-                    }
-                    break;
-
-                // Right arrow
-                case VirtualKey.Right:
-                    // If the shift key is down, then adjust the size of the selection.
-                    if (_coreWindow.GetKeyState(VirtualKey.Shift).HasFlag(CoreVirtualKeyStates.Down))
-                    {
-                        // If this is the start of a selection, then remember which edge we are adjusting.
-                        if (!_textDocument.HasSelection())
-                        {
-                            _textDocument.ExtendingLeft = false;
-                        }
-
-                        // Adjust the selection and notify CoreTextEditContext.
-                        _textDocument.AdjustSelectionEndpoint(+1);
-                    }
-                    else
-                    {
-                        // The shift key is not down. If there was a selection, then snap the
-                        // caret at the right edge of the selection.
-                        if (_textDocument.HasSelection())
-                        {
-                            range.StartCaretPosition = range.EndCaretPosition;
-                            _textDocument.SetSelectionAndNotify(range);
-                        }
-                        else
-                        {
-                            // There was no selection. Move the caret right one code unit if possible.
-                            range.StartCaretPosition = Math.Min(_textDocument.Text.Length, range.StartCaretPosition + 1);
-                            range.EndCaretPosition = range.StartCaretPosition;
-                            _textDocument.SetSelectionAndNotify(range);
-                        }
-                    }
-                    break;
-            }
-        }
-
         private void CoreWindow_PointerPressed(CoreWindow sender, PointerEventArgs args)
         {
             // See whether the pointer is inside or outside the control.
@@ -332,7 +176,7 @@ namespace Amion.CodeEditBox
 
                 // Tell XAML that this element has focus, so we don't have two
                 // focus elements. That is the extent of our integration with XAML focus.
-                bool s = Focus(FocusState.Programmatic);
+                Focus(FocusState.Programmatic);
 
                 //! A more complete custom control would move the caret to the
                 //! pointer position. It would also provide some way to select
@@ -343,13 +187,6 @@ namespace Amion.CodeEditBox
                 // The user tapped outside the control. Remove focus.
                 RemoveInternalFocus();
             }
-        }
-
-        
-
-        private void EditContext_FocusRemoved(CoreTextEditContext sender, object args)
-        {
-            RemoveInternalFocusWorker();
         }
 
         private void EditContext_LayoutRequested(CoreTextEditContext sender, CoreTextLayoutRequestedEventArgs args)
