@@ -67,6 +67,20 @@ namespace Amion.CodeEditBox.Document
             return _text.Length;
         }
 
+        public void SetText(string newText)
+        {
+            var range = new CoreTextRange
+            {
+                StartCaretPosition = 0,
+                EndCaretPosition = _text.Length
+            };
+
+            _text = newText;
+
+            Selection.SetPosition(0);
+            OnTextChanged(new TextChangedEventArgs(range, _text.Length, Selection.Range));
+        }
+
         #region EditContext
 
         // Return the specified range of text. Note that the system may ask for more text

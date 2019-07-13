@@ -49,10 +49,10 @@ namespace Amion.CodeEditBox.Document
             _selectionChanged();
         }
 
-        public void SetRange(CoreTextRange range)
+        public void SetRange(CoreTextRange range, bool extendingLeft = false)
         {
             _range = range;
-            _extendingLeft = false;
+            _extendingLeft = extendingLeft;
 
             _selectionChanged();
         }

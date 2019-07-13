@@ -26,6 +26,7 @@ namespace Amion.CodeEditBox.Document
 
         /// <summary>
         /// Deletes the previous (left) char from the caret.
+        /// Selection size is expected to be zero
         /// </summary>
         public void DeletePreviousChar()
         {
