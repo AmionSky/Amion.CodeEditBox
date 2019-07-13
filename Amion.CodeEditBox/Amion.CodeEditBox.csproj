@@ -123,6 +123,10 @@
     <Compile Include="CodeEditBox.xaml.cs">
       <DependentUpon>CodeEditBox.xaml</DependentUpon>
     </Compile>
+    <Compile Include="Document\Events\SelectionChangedEventArgs.cs" />
+    <Compile Include="Document\Events\TextChangedEventArgs.cs" />
+    <Compile Include="Document\TextDocument.cs" />
+    <Compile Include="Helpers\LayoutHelper.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
     <EmbeddedResource Include="Properties\Amion.CodeEditBox.rd.xml" />
   </ItemGroup>

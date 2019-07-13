@@ -9,6 +9,6 @@
     mc:Ignorable="d">
 
     <Grid>
-        <aceb:CodeEditBox />
+        <aceb:CodeEditBox Margin="20,20,20,20" />
     </Grid>
 </Page>
