@@ -20,8 +20,10 @@ namespace Amion.CodeEditBox.Document
         /// </summary>
         public void DeleteSelected()
         {
+            var range = _textDocument.Selection.Range;
+
             // Set the text in the selection to nothing.
-            _textDocument.ReplaceText(_textDocument.Selection.Range, "");
+            _textDocument.ReplaceText(range, "");
         }
 
         /// <summary>
@@ -35,7 +37,8 @@ namespace Amion.CodeEditBox.Document
             // Delete the character to the left of the caret, if one exists,
             // by creating a range that encloses the character to the left
             // of the caret, and setting the contents of that range to nothing.
-            range.StartCaretPosition = Math.Max(0, range.StartCaretPosition - 1);
+            range.StartPosition = Math.Max(0, range.StartPosition - 1);
+
             _textDocument.ReplaceText(range, "");
         }
 
@@ -48,14 +51,15 @@ namespace Amion.CodeEditBox.Document
 
             // If there was a selection, then snap the caret at the left edge of the selection.
             // TODO: RTL languages?
-            if (_textDocument.Selection.HasSelection())
+            if (!range.IsEmpty())
             {
-                _textDocument.Selection.SetPosition(range.StartCaretPosition);
+                range.EndPosition = range.StartPosition;
+                _textDocument.Selection.SetRange(range);
             }
             else
             {
                 // There was no selection. Move the caret left one code unit if possible.
-                _textDocument.Selection.SetPosition(range.StartCaretPosition - 1);
+                _textDocument.Selection.SetRange(new SelectionRange(range.StartPosition - 1));
             }
         }
 
@@ -68,14 +72,15 @@ namespace Amion.CodeEditBox.Document
 
             // If there was a selection, then snap the caret at the right edge of the selection.
             // TODO: RTL languages?
-            if (_textDocument.Selection.HasSelection())
+            if (!range.IsEmpty())
             {
-                _textDocument.Selection.SetPosition(range.EndCaretPosition);
+                range.StartPosition = range.EndPosition;
+                _textDocument.Selection.SetRange(range);
             }
             else
             {
                 // There was no selection. Move the caret right one code unit if possible.
-                _textDocument.Selection.SetPosition(range.StartCaretPosition + 1);
+                _textDocument.Selection.SetRange(new SelectionRange(range.StartPosition + 1));
             }
         }
 

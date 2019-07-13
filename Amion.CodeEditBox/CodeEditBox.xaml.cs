@@ -131,14 +131,14 @@ namespace Amion.CodeEditBox
             // the caret/selection is. We can render the control any way we like.
             var selection = _textDocument.Selection.Range;
 
-            BeforeSelectionText.Text = _textDocument.Text.Substring(0, selection.StartCaretPosition);
-            if (_textDocument.Selection.HasSelection())
+            BeforeSelectionText.Text = _textDocument.TextBuffer.SubstringByTextElements(0, selection.StartPosition);
+            if (!_textDocument.Selection.Range.IsEmpty())
             {
                 // There is a selection. Draw that.
                 CaretText.Visibility = Visibility.Collapsed;
-                SelectionText.Text = _textDocument.Text.Substring(
-                    selection.StartCaretPosition, 
-                    selection.EndCaretPosition - selection.StartCaretPosition);
+                SelectionText.Text = _textDocument.TextBuffer.SubstringByTextElements(
+                    selection.StartPosition, 
+                    selection.EndPosition - selection.StartPosition);
             }
             else
             {
@@ -149,12 +149,12 @@ namespace Amion.CodeEditBox
                 CaretText.Visibility = _internalFocus ? Visibility.Visible : Visibility.Collapsed;
             }
 
-            AfterSelectionText.Text = _textDocument.Text.Substring(selection.EndCaretPosition);
+            AfterSelectionText.Text = _textDocument.TextBuffer.SubstringByTextElements(selection.EndPosition);
 
             // Update statistics for demonstration purposes.
-            FullText.Text = _textDocument.Text;
-            SelectionStartIndexText.Text = selection.StartCaretPosition.ToString();
-            SelectionEndIndexText.Text = selection.EndCaretPosition.ToString();
+            FullText.Text = _textDocument.TextBuffer.Text;
+            SelectionStartIndexText.Text = selection.StartPosition.ToString();
+            SelectionEndIndexText.Text = selection.EndPosition.ToString();
         }
 
         private void UpdateFocusUI()

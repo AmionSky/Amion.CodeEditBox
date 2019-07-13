@@ -49,7 +49,7 @@ namespace Amion.CodeEditBox
         private void Key_Backspace()
         {
             // If there is a selection, then delete the selection.
-            if (_textDocument.Selection.HasSelection())
+            if (!_textDocument.Selection.Range.IsEmpty())
             {
                 _textDocument.Actions.DeleteSelected();
             }

@@ -120,12 +120,14 @@
     <RestoreProjectStyle>PackageReference</RestoreProjectStyle>
   </PropertyGroup>
   <ItemGroup>
+    <Compile Include="Buffer\TextBuffer.cs" />
     <Compile Include="CodeEditBox.xaml.cs">
       <DependentUpon>CodeEditBox.xaml</DependentUpon>
     </Compile>
     <Compile Include="CodeEditBoxFocus.cs" />
     <Compile Include="Document\Events\SelectionChangedEventArgs.cs" />
     <Compile Include="Document\Events\TextChangedEventArgs.cs" />
+    <Compile Include="Document\SelectionRange.cs" />
     <Compile Include="Document\TextActions.cs" />
     <Compile Include="Document\TextDocument.cs" />
     <Compile Include="Document\TextSelection.cs" />

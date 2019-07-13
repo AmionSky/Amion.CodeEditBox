@@ -1,4 +1,6 @@
-﻿using Amion.CodeEditBox.Document.Events;
+﻿using Amion.CodeEditBox.Buffer;
+using Amion.CodeEditBox.Document.Events;
+using Amion.CodeEditBox.Helpers;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -14,19 +16,15 @@ namespace Amion.CodeEditBox.Document
         public event EventHandler<SelectionChangedEventArgs> SelectionChanged;
 
         public TextSelection Selection { get; }
-        public string Text { get => _text; }
-
+        public TextBuffer TextBuffer { get; }
         public TextActions Actions { get; }
 
         // The TextEditContext lets us communicate with the input system.
         CoreTextEditContext _editContext;
 
-        // We will use a plain text string to represent the
-        // content of the custom text edit control.
-        string _text = string.Empty;
-
         public TextDocument(CoreTextEditContext editContext)
         {
+            TextBuffer = new TextBuffer();
             _editContext = editContext;
 
             // The system raises this event to request a specific range of text.
@@ -46,39 +44,51 @@ namespace Amion.CodeEditBox.Document
 
         }
 
+        /// <summary>
+        /// Replaces some portion of the text in the text buffer
+        /// </summary>
+        /// <param name="modifiedRange">The range of text to modify in character indexes.</param>
+        /// <param name="text">The text to insert.</param>
         public void ReplaceText(CoreTextRange modifiedRange, string text)
         {
             // Modify the internal text store.
-            _text = _text.Substring(0, modifiedRange.StartCaretPosition) + 
-                text + _text.Substring(modifiedRange.EndCaretPosition);
+            TextBuffer.InsertByCharIndex(text, modifiedRange.StartCaretPosition, modifiedRange.EndCaretPosition);
+
+            // Change range to point at the end of the inserted text
+            CoreTextRange newSelection = modifiedRange;
+            newSelection.StartCaretPosition = newSelection.StartCaretPosition + text.Length;
+            newSelection.EndCaretPosition = newSelection.StartCaretPosition;
 
             // Move the caret to the end of the replacement text.
-            Selection.SetPosition(modifiedRange.StartCaretPosition + text.Length);
-
+            Selection.SetRange(newSelection);
+            
             // Let the CoreTextEditContext know what changed.
-            _editContext.NotifyTextChanged(modifiedRange, text.Length, Selection.Range);
+            _editContext.NotifyTextChanged(modifiedRange, text.Length, newSelection);
 
             // Raise text changed event.
-            OnTextChanged(new TextChangedEventArgs(modifiedRange, text.Length, Selection.Range));
+            OnTextChanged(new TextChangedEventArgs(modifiedRange, text.Length, newSelection));
         }
 
-        public int Length()
+        public void ReplaceText(SelectionRange modifiedRange, string text)
         {
-            return _text.Length;
+            ReplaceText(modifiedRange.ToCoreText(TextBuffer), text);
         }
 
         public void SetText(string newText)
         {
+            // Always use character indexes when sending events out
             var range = new CoreTextRange
             {
                 StartCaretPosition = 0,
-                EndCaretPosition = _text.Length
+                EndCaretPosition = TextBuffer.CharLength
             };
 
-            _text = newText;
+            // Set the new text and reset the selection to 0
+            TextBuffer.SetText(newText);
+            Selection.Reset();
 
-            Selection.SetPosition(0);
-            OnTextChanged(new TextChangedEventArgs(range, _text.Length, Selection.Range));
+            // Selection has been reset so "newSelection" can be an empty CoreTextRange.
+            OnTextChanged(new TextChangedEventArgs(range, newText.Length, new CoreTextRange()));
         }
 
         #region EditContext
@@ -88,26 +98,26 @@ namespace Amion.CodeEditBox.Document
         private void EditContext_TextRequested(CoreTextEditContext sender, CoreTextTextRequestedEventArgs args)
         {
             CoreTextTextRequest request = args.Request;
-            request.Text = _text.Substring(
-                request.Range.StartCaretPosition,
-                Math.Min(request.Range.EndCaretPosition, _text.Length) - request.Range.StartCaretPosition);
+            CoreTextRange range = request.Range;
+            request.Text = TextBuffer.Text.Substring(
+                range.StartCaretPosition,
+                Math.Min(range.EndCaretPosition, TextBuffer.CharLength) - range.StartCaretPosition);
         }
 
         private void EditContext_SelectionRequested(CoreTextEditContext sender, CoreTextSelectionRequestedEventArgs args)
         {
             CoreTextSelectionRequest request = args.Request;
-            request.Selection = Selection.Range;
+            request.Selection = TextBuffer.SelectionRangeToTextRange(Selection.Range);
         }
 
         private void EditContext_TextUpdating(CoreTextEditContext sender, CoreTextTextUpdatingEventArgs args)
         {
             CoreTextRange range = args.Range;
-            string newText = args.Text;
             CoreTextRange newSelection = args.NewSelection;
+            string newText = args.Text;
 
             // Modify the internal text store.
-            _text = _text.Substring(0, range.StartCaretPosition) +
-                newText + _text.Substring(Math.Min(_text.Length, range.EndCaretPosition));
+            TextBuffer.InsertByCharIndex(newText, range.StartCaretPosition, Math.Min(TextBuffer.CharLength, range.EndCaretPosition));
 
             //! You can set the proper font or direction for the updated text based on the language by checking
             //! args.InputLanguage.  We will not do that in this sample.
@@ -144,7 +154,7 @@ namespace Amion.CodeEditBox.Document
 
         private void OnSelectionChanged()
         {
-            CoreTextRange selection = Selection.Range;
+            CoreTextRange selection = TextBuffer.SelectionRangeToTextRange(Selection.Range);
 
             SelectionChanged?.Invoke(this, new SelectionChangedEventArgs(selection));
             _editContext.NotifySelectionChanged(selection);
