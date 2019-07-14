@@ -127,6 +127,9 @@ namespace Amion.CodeEditBox.Document
 
             // Update the selection of the edit context.
             Selection.SetRange(newSelection);
+
+            // Send event about the text changing
+            OnTextChanged(new TextChangedEventArgs(range, newText.Length, newSelection));
         }
 
         private void EditContext_SelectionUpdating(CoreTextEditContext sender, CoreTextSelectionUpdatingEventArgs args)

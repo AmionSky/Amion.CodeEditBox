@@ -1,5 +1,8 @@
 ﻿using Amion.CodeEditBox.Document;
 using Amion.CodeEditBox.Helpers;
+using Microsoft.Graphics.Canvas;
+using Microsoft.Graphics.Canvas.Text;
+using Microsoft.Graphics.Canvas.UI.Xaml;
 using System;
 using System.Collections.Generic;
 using System.IO;
@@ -9,6 +12,7 @@ using Windows.Foundation;
 using Windows.Foundation.Collections;
 using Windows.Graphics.Display;
 using Windows.System;
+using Windows.UI;
 using Windows.UI.Core;
 using Windows.UI.Text.Core;
 using Windows.UI.ViewManagement;
@@ -32,20 +36,29 @@ namespace Amion.CodeEditBox
         // The TextEditContext lets us communicate with the input system.
         CoreTextEditContext _editContext;
 
-        //x The input pane object indicates the visibility of the on screen keyboard.
-        //x Apps can also ask the keyboard to show or hide.
-        //x InputPane _inputPane;
-
         // _internalFocus keeps track of whether our control acts like it has focus.
         bool _internalFocus = false;
 
         // The Document where the text is stored and modifications handled
         TextDocument _textDocument;
 
+        // Rendered text format
+        CanvasTextFormat _textFormat;
+
+        // Rendertargets
+        CanvasRenderTarget _renderedText;
+        CanvasRenderTarget _renderedSelection;
+
         public CodeEditBox()
         {
             InitializeComponent();
             Unloaded += CodeEditBox_Unloaded;
+
+            _textFormat = new CanvasTextFormat
+            {
+                FontFamily = "Consolas",
+                FontSize = 14
+            };
 
             // Make the control focusable
             IsTabStop = true;
@@ -64,9 +77,6 @@ namespace Amion.CodeEditBox
             _textDocument = new TextDocument(_editContext);
             _textDocument.TextChanged += TextDocument_TextChanged;
             _textDocument.SelectionChanged += TextDocument_SelectionChanged;
-
-            //x Get the Input Pane so we can programmatically hide and show it.
-            //x _inputPane = InputPane.GetForCurrentView();
 
             //! Automatic hide and show the Input Pane. Note that on Desktop, you will need to
             //! implement the UIA text pattern to get expected automatic behavior.
@@ -96,21 +106,34 @@ namespace Amion.CodeEditBox
             LostFocus += CodeEditBox_FocusChanged;
             CodeEditBox_FocusChanged(this, null);
 
+            // Update rendertargets
+            TextDisplay.SizeChanged += TextDisplay_SizeChanged;
+            TextDisplay_SizeChanged(this, null);
 
             // Set our initial UI.
             UpdateTextUI();
+            UpdateSelectionUI();
             UpdateFocusUI();
+        }
+
+        private void TextDisplay_SizeChanged(object sender, SizeChangedEventArgs e)
+        {
+            CanvasDevice device = CanvasDevice.GetSharedDevice();
+            _renderedSelection = new CanvasRenderTarget(device, (float)TextDisplay.ActualWidth, (float)TextDisplay.ActualHeight, TextDisplay.Dpi);
+            _renderedText = new CanvasRenderTarget(device, (float)TextDisplay.ActualWidth, (float)TextDisplay.ActualHeight, TextDisplay.Dpi);
         }
 
         private void TextDocument_SelectionChanged(object sender, Document.Events.SelectionChangedEventArgs e)
         {
-            //Update the UI to show the new selection.
-            UpdateTextUI();
+            // Update the UI to show the new selection.
+            UpdateSelectionUI();
+            
         }
 
         private void TextDocument_TextChanged(object sender, Document.Events.TextChangedEventArgs e)
         {
-            // Nothing yet
+            // Update the UI to show the new text.
+            UpdateTextUI();
         }
 
         private void CodeEditBox_Unloaded(object sender, RoutedEventArgs e)
@@ -125,11 +148,83 @@ namespace Amion.CodeEditBox
             OrigFocus.Text = FocusState.ToString();
         }
 
+        // TODO: move this
+        private static Size MeasureTextSize(string text, CanvasTextFormat textFormat, Size limit)
+        {
+            var device = CanvasDevice.GetSharedDevice();
+            var layout = new CanvasTextLayout(device, text, textFormat, (float)limit.Width, (float)limit.Height);
+
+            var width = layout.LayoutBoundsIncludingTrailingWhitespace.Width;
+            var height = layout.LayoutBoundsIncludingTrailingWhitespace.Height;
+
+            return new Size(width, height);
+        }
+
+        
+
+        private void TextDisplay_Draw(CanvasControl sender, CanvasDrawEventArgs args)
+        {
+            args.DrawingSession.DrawImage(_renderedText, 0, 0);
+            args.DrawingSession.DrawImage(_renderedSelection, 0, 0);
+        }
+
+        private void UpdateSelectionUI()
+        {
+            var selection = _textDocument.Selection.Range;
+
+            string preSelectionText = _textDocument.TextBuffer.SubstringByTextElements(0, selection.StartPosition);
+            Size preSelectionSize = MeasureTextSize(preSelectionText, _textFormat, _renderedSelection.Size);
+            
+            float height = (float)preSelectionSize.Height;
+            float offset = (float)preSelectionSize.Width;
+            float width = 1.0f;
+
+            string selectionText = string.Empty;
+
+            if (!selection.IsEmpty())
+            {
+                selectionText = _textDocument.TextBuffer.SubstringByTextElements(
+                    selection.StartPosition,
+                    selection.EndPosition - selection.StartPosition);
+
+                Size selectionSize = MeasureTextSize(selectionText, _textFormat, _renderedSelection.Size);
+
+                width = (float)selectionSize.Width;
+            }
+
+            using (CanvasDrawingSession ds = _renderedSelection.CreateDrawingSession())
+            {
+                ds.Clear(Colors.Transparent);
+                ds.FillRectangle(offset, 0, width, height, Colors.DarkBlue);
+
+                if (!selection.IsEmpty())
+                {
+                    ds.DrawText(selectionText, offset, 0, Colors.White, _textFormat);
+                }
+            }
+
+            TextDisplay.Invalidate();
+
+            // Update statistics for debug purposes.
+            SelectionStartIndexText.Text = selection.StartPosition.ToString();
+            SelectionEndIndexText.Text = selection.EndPosition.ToString();
+        }
+
         private void UpdateTextUI()
         {
-            // The raw materials we have are a string and information about where
-            // the caret/selection is. We can render the control any way we like.
-            var selection = _textDocument.Selection.Range;
+            // Render content
+            using (CanvasDrawingSession ds = _renderedText.CreateDrawingSession())
+            {
+                ds.Clear(Colors.Transparent);
+                ds.DrawText(_textDocument.TextBuffer.Text, 0, 0, Colors.DarkRed, _textFormat);
+            }
+
+            TextDisplay.Invalidate();
+
+            // Update statistics for debug purposes.
+            FullText.Text = _textDocument.TextBuffer.Text;
+
+            /*
 
             BeforeSelectionText.Text = _textDocument.TextBuffer.SubstringByTextElements(0, selection.StartPosition);
             if (!_textDocument.Selection.Range.IsEmpty())
@@ -155,6 +250,7 @@ namespace Amion.CodeEditBox
             FullText.Text = _textDocument.TextBuffer.Text;
             SelectionStartIndexText.Text = selection.StartPosition.ToString();
             SelectionEndIndexText.Text = selection.EndPosition.ToString();
+            */
         }
 
         private void UpdateFocusUI()
@@ -198,8 +294,8 @@ namespace Amion.CodeEditBox
 
             // First, get the coordinates of the edit control and the selection
             // relative to the Window.
-            Rect contentRect = LayoutHelper.GetElementRect(ContentPanel);
-            Rect selectionRect = LayoutHelper.GetElementRect(SelectionText);
+            Rect contentRect = LayoutHelper.GetElementRect(TextDisplay);
+            Rect selectionRect = new Rect(); //TODO REPLACE!
 
             // Next, convert to screen coordinates in view pixels.
             Rect windowBounds = Window.Current.CoreWindow.Bounds;

@@ -2,6 +2,7 @@
     x:Class="Amion.CodeEditBox.CodeEditBox"
     xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
     xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+    xmlns:canvas="using:Microsoft.Graphics.Canvas.UI.Xaml"
     xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
     xmlns:local="using:Amion.CodeEditBox"
     xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
@@ -10,41 +11,41 @@
     mc:Ignorable="d">
 
     <StackPanel>
-        <StackPanel
+        <TextBox
+            HorizontalAlignment="Stretch"
+            FontFamily="Consolas"
+            FontSize="14" />
+        <Frame
             x:Name="BorderPanel"
+            Width="Auto"
+            Height="200"
+            Padding="4"
+            HorizontalAlignment="Stretch"
+            VerticalAlignment="Stretch"
             Background="White"
             BorderThickness="4">
-            <StackPanel
-                x:Name="ContentPanel"
-                HorizontalAlignment="Left"
-                Orientation="Horizontal">
-                <TextBlock x:Name="BeforeSelectionText" Foreground="Black" />
-                <TextBlock
-                    x:Name="CaretText"
-                    FontFamily="Segoe UI Symbol"
-                    Foreground="Blue"
-                    Text="&#xe12b;" />
-                <Border Background="Blue">
-                    <TextBlock x:Name="SelectionText" Foreground="White" />
-                </Border>
-                <TextBlock x:Name="AfterSelectionText" Foreground="Black" />
-            </StackPanel>
-        </StackPanel>
+            <canvas:CanvasControl
+                x:Name="TextDisplay"
+                HorizontalAlignment="Stretch"
+                VerticalAlignment="Stretch"
+                Draw="TextDisplay_Draw" />
+        </Frame>
+
         <!--  Additional statistics for debugging purposes  -->
         <TextBlock>
-            Focus:<Run x:Name="OrigFocus" />
+            Focus:&#160;<Run x:Name="OrigFocus" />
         </TextBlock>
         <TextBlock>
-            Internal Focus:<Run x:Name="InterFocus" />
+            Internal Focus:&#160;<Run x:Name="InterFocus" />
         </TextBlock>
         <TextBlock>
-            Full text:<Run x:Name="FullText" />
+            Full text:&#160;<Run x:Name="FullText" />
         </TextBlock>
         <TextBlock>
-            Selection start index:<Run x:Name="SelectionStartIndexText" />
+            Selection start index:&#160;<Run x:Name="SelectionStartIndexText" />
         </TextBlock>
         <TextBlock>
-            Selection end index:<Run x:Name="SelectionEndIndexText" />
+            Selection end index:&#160;<Run x:Name="SelectionEndIndexText" />
         </TextBlock>
     </StackPanel>
 </UserControl>
