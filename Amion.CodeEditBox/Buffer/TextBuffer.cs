@@ -19,15 +19,15 @@ namespace Amion.CodeEditBox.Buffer
         /// <summary>
         /// The Length in text elements.
         /// </summary>
-        public int ElementLength => _elementIndexes.Length;
+        public int ElementLength => _charIndexes.Length;
 
         /// <summary>
         /// The length in chars.
         /// </summary>
         public int CharLength => Text.Length;
 
-        // Cached starting indexes of the text elements
-        private int[] _elementIndexes;
+        // Cached starting indexes of the text elements in characters
+        private int[] _charIndexes;
 
         public TextBuffer()
         {
@@ -41,7 +41,7 @@ namespace Amion.CodeEditBox.Buffer
         public void SetText(string newText)
         {
             Text = newText;
-             _elementIndexes = StringInfo.ParseCombiningCharacters(newText);
+             _charIndexes = StringInfo.ParseCombiningCharacters(newText);
         }
 
         /// <summary>
@@ -114,11 +114,14 @@ namespace Amion.CodeEditBox.Buffer
         {
             if (index < ElementLength)
             {
-                return _elementIndexes[index];
+                return _charIndexes[index];
             }
             else if (index == ElementLength)
             {
-                return GetAfterLastIndex();
+                if (ElementLength == 0) return 0;
+                int lastCharIndex = _charIndexes[ElementLength - 1];
+                int lastCharLength = StringInfo.GetNextTextElement(Text, lastCharIndex).Length;
+                return lastCharIndex + lastCharLength;
             }
             else
             {
@@ -126,36 +129,31 @@ namespace Amion.CodeEditBox.Buffer
             }
         }
 
-        private int GetAfterLastIndex()
-        {
-            if (ElementLength == 0) return 0;
-            int lastCharLength = StringInfo.GetNextTextElement(Text, ElementLength - 1).Length;
-            return _elementIndexes[ElementLength - 1] + lastCharLength;
-        }
-
         public SelectionRange TextRangeToSelectionRange(CoreTextRange range)
         {
             int start = 0;
             int end = 0;
 
-            if (range.StartCaretPosition == CharLength) start = GetAfterLastIndex();
-            if (range.EndCaretPosition == CharLength) end = GetAfterLastIndex();
+            if (range.StartCaretPosition == CharLength) start = ElementLength;
+            if (range.EndCaretPosition == CharLength) end = ElementLength;
 
             bool searchingStart = start == 0;
             bool searchingEnd = end == 0;
 
-            foreach (int charIndex in _elementIndexes)
+            for (int elementIndex = 0; elementIndex < ElementLength; elementIndex++)
             {
+                int charIndex = _charIndexes[elementIndex];
+
                 if (searchingStart)
                 {
                     searchingStart = charIndex <= range.StartCaretPosition;
-                    if (searchingStart) start = charIndex;
+                    if (searchingStart) start = elementIndex;
                 }
 
                 if (searchingEnd)
                 {
                     searchingEnd = charIndex <= range.EndCaretPosition;
-                    if (searchingEnd) end = charIndex;
+                    if (searchingEnd) end = elementIndex;
                 }
 
                 if (!(searchingStart || searchingEnd)) break;

@@ -8,7 +8,7 @@ using Windows.UI.Text.Core;
 
 namespace Amion.CodeEditBox.Document
 {
-    struct SelectionRange
+    struct SelectionRange : IEquatable<SelectionRange>
     {
         public int StartPosition;
         public int EndPosition;
@@ -32,6 +32,11 @@ namespace Amion.CodeEditBox.Document
         public CoreTextRange ToCoreText(TextBuffer textBuffer)
         {
             return textBuffer.SelectionRangeToTextRange(this);
+        }
+
+        public bool Equals(SelectionRange other)
+        {
+            return StartPosition == other.StartPosition && EndPosition == other.EndPosition;
         }
     }
 }

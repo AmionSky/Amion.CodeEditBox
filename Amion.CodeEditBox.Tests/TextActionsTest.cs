@@ -23,20 +23,20 @@ namespace Amion.CodeEditBox.Tests
         public void Test_DeleteSelected()
         {
             _textDocument.SetText("Some Text");
-            _textDocument.Selection.SetRange(new CoreTextRange { StartCaretPosition = 2, EndCaretPosition = 6 });
+            _textDocument.Selection.SetRange(new SelectionRange { StartPosition = 2, EndPosition = 6 });
             _textDocument.Actions.DeleteSelected();
 
-            Assert.AreEqual("Soext", _textDocument.Text);
+            Assert.AreEqual("Soext", _textDocument.TextBuffer.Text);
         }
 
         [TestMethod]
         public void Test_DeletePreviousChar()
         {
             _textDocument.SetText("Some Text");
-            _textDocument.Selection.SetRange(new CoreTextRange { StartCaretPosition = 6, EndCaretPosition = 6 });
+            _textDocument.Selection.SetRange(new SelectionRange { StartPosition = 6, EndPosition = 6 });
             _textDocument.Actions.DeletePreviousChar();
 
-            Assert.AreEqual("Some ext", _textDocument.Text);
+            Assert.AreEqual("Some ext", _textDocument.TextBuffer.Text);
         }
         #endregion
 
@@ -45,26 +45,26 @@ namespace Amion.CodeEditBox.Tests
         public void Test_StepLeft_NoSelection()
         {
             _textDocument.SetText("Some Text");
-            _textDocument.Selection.SetRange(new CoreTextRange { StartCaretPosition = 6, EndCaretPosition = 6 });
+            _textDocument.Selection.SetRange(new SelectionRange { StartPosition = 6, EndPosition = 6 });
             _textDocument.Actions.StepLeft();
 
-            var expected = new CoreTextRange { StartCaretPosition = 5, EndCaretPosition = 5 };
+            var expected = new SelectionRange { StartPosition = 5, EndPosition = 5 };
             var actual = _textDocument.Selection.Range;
-            Assert.AreEqual(expected.StartCaretPosition, actual.StartCaretPosition, "StartCaretPosition");
-            Assert.AreEqual(expected.EndCaretPosition, actual.EndCaretPosition, "EndCaretPosition");
+            Assert.AreEqual(expected.StartPosition, actual.StartPosition, "StartPosition");
+            Assert.AreEqual(expected.EndPosition, actual.EndPosition, "EndPosition");
         }
 
         [TestMethod]
         public void Test_StepLeft_HasSelection()
         {
             _textDocument.SetText("Some Text");
-            _textDocument.Selection.SetRange(new CoreTextRange { StartCaretPosition = 3, EndCaretPosition = 6 });
+            _textDocument.Selection.SetRange(new SelectionRange { StartPosition = 3, EndPosition = 6 });
             _textDocument.Actions.StepLeft();
 
-            var expected = new CoreTextRange { StartCaretPosition = 3, EndCaretPosition = 3 };
+            var expected = new SelectionRange { StartPosition = 3, EndPosition = 3 };
             var actual = _textDocument.Selection.Range;
-            Assert.AreEqual(expected.StartCaretPosition, actual.StartCaretPosition, "StartCaretPosition");
-            Assert.AreEqual(expected.EndCaretPosition, actual.EndCaretPosition, "EndCaretPosition");
+            Assert.AreEqual(expected.StartPosition, actual.StartPosition, "StartPosition");
+            Assert.AreEqual(expected.EndPosition, actual.EndPosition, "EndPosition");
         }
         #endregion
 
@@ -73,26 +73,26 @@ namespace Amion.CodeEditBox.Tests
         public void Test_StepRight_NoSelection()
         {
             _textDocument.SetText("Some Text");
-            _textDocument.Selection.SetRange(new CoreTextRange { StartCaretPosition = 6, EndCaretPosition = 6 });
+            _textDocument.Selection.SetRange(new SelectionRange { StartPosition = 6, EndPosition = 6 });
             _textDocument.Actions.StepRight();
 
-            var expected = new CoreTextRange { StartCaretPosition = 7, EndCaretPosition = 7 };
+            var expected = new SelectionRange { StartPosition = 7, EndPosition = 7 };
             var actual = _textDocument.Selection.Range;
-            Assert.AreEqual(expected.StartCaretPosition, actual.StartCaretPosition, "StartCaretPosition");
-            Assert.AreEqual(expected.EndCaretPosition, actual.EndCaretPosition, "EndCaretPosition");
+            Assert.AreEqual(expected.StartPosition, actual.StartPosition, "StartPosition");
+            Assert.AreEqual(expected.EndPosition, actual.EndPosition, "EndPosition");
         }
 
         [TestMethod]
         public void Test_StepRight_HasSelection()
         {
             _textDocument.SetText("Some Text");
-            _textDocument.Selection.SetRange(new CoreTextRange { StartCaretPosition = 3, EndCaretPosition = 6 });
+            _textDocument.Selection.SetRange(new SelectionRange { StartPosition = 3, EndPosition = 6 });
             _textDocument.Actions.StepRight();
 
-            var expected = new CoreTextRange { StartCaretPosition = 6, EndCaretPosition = 6 };
+            var expected = new SelectionRange { StartPosition = 6, EndPosition = 6 };
             var actual = _textDocument.Selection.Range;
-            Assert.AreEqual(expected.StartCaretPosition, actual.StartCaretPosition, "StartCaretPosition");
-            Assert.AreEqual(expected.EndCaretPosition, actual.EndCaretPosition, "EndCaretPosition");
+            Assert.AreEqual(expected.StartPosition, actual.StartPosition, "StartPosition");
+            Assert.AreEqual(expected.EndPosition, actual.EndPosition, "EndPosition");
         }
         #endregion
 
@@ -101,39 +101,39 @@ namespace Amion.CodeEditBox.Tests
         public void Test_AdjustSelectionLeft_NoSelection()
         {
             _textDocument.SetText("Some Text");
-            _textDocument.Selection.SetRange(new CoreTextRange { StartCaretPosition = 4, EndCaretPosition = 4 });
+            _textDocument.Selection.SetRange(new SelectionRange { StartPosition = 4, EndPosition = 4 });
             _textDocument.Actions.AdjustSelectionLeft();
 
-            var expected = new CoreTextRange { StartCaretPosition = 3, EndCaretPosition = 4 };
+            var expected = new SelectionRange { StartPosition = 3, EndPosition = 4 };
             var actual = _textDocument.Selection.Range;
-            Assert.AreEqual(expected.StartCaretPosition, actual.StartCaretPosition, "StartCaretPosition");
-            Assert.AreEqual(expected.EndCaretPosition, actual.EndCaretPosition, "EndCaretPosition");
+            Assert.AreEqual(expected.StartPosition, actual.StartPosition, "StartPosition");
+            Assert.AreEqual(expected.EndPosition, actual.EndPosition, "EndPosition");
         }
 
         [TestMethod]
         public void Test_AdjustSelectionLeft_LeftExtended()
         {
             _textDocument.SetText("Some Text");
-            _textDocument.Selection.SetRange(new CoreTextRange { StartCaretPosition = 3, EndCaretPosition = 4 }, true);
+            _textDocument.Selection.SetRange(new SelectionRange { StartPosition = 3, EndPosition = 4 }, true);
             _textDocument.Actions.AdjustSelectionLeft();
 
-            var expected = new CoreTextRange { StartCaretPosition = 2, EndCaretPosition = 4 };
+            var expected = new SelectionRange { StartPosition = 2, EndPosition = 4 };
             var actual = _textDocument.Selection.Range;
-            Assert.AreEqual(expected.StartCaretPosition, actual.StartCaretPosition, "StartCaretPosition");
-            Assert.AreEqual(expected.EndCaretPosition, actual.EndCaretPosition, "EndCaretPosition");
+            Assert.AreEqual(expected.StartPosition, actual.StartPosition, "StartPosition");
+            Assert.AreEqual(expected.EndPosition, actual.EndPosition, "EndPosition");
         }
 
         [TestMethod]
         public void Test_AdjustSelectionLeft_RightExtended()
         {
             _textDocument.SetText("Some Text");
-            _textDocument.Selection.SetRange(new CoreTextRange { StartCaretPosition = 4, EndCaretPosition = 5 });
+            _textDocument.Selection.SetRange(new SelectionRange { StartPosition = 4, EndPosition = 5 });
             _textDocument.Actions.AdjustSelectionLeft();
 
-            var expected = new CoreTextRange { StartCaretPosition = 4, EndCaretPosition = 4 };
+            var expected = new SelectionRange { StartPosition = 4, EndPosition = 4 };
             var actual = _textDocument.Selection.Range;
-            Assert.AreEqual(expected.StartCaretPosition, actual.StartCaretPosition, "StartCaretPosition");
-            Assert.AreEqual(expected.EndCaretPosition, actual.EndCaretPosition, "EndCaretPosition");
+            Assert.AreEqual(expected.StartPosition, actual.StartPosition, "StartPosition");
+            Assert.AreEqual(expected.EndPosition, actual.EndPosition, "EndPosition");
         }
         #endregion
 
@@ -142,39 +142,39 @@ namespace Amion.CodeEditBox.Tests
         public void Test_AdjustSelectionRight_NoSelection()
         {
             _textDocument.SetText("Some Text");
-            _textDocument.Selection.SetRange(new CoreTextRange { StartCaretPosition = 4, EndCaretPosition = 4 });
+            _textDocument.Selection.SetRange(new SelectionRange { StartPosition = 4, EndPosition = 4 });
             _textDocument.Actions.AdjustSelectionRight();
 
-            var expected = new CoreTextRange { StartCaretPosition = 4, EndCaretPosition = 5 };
+            var expected = new SelectionRange { StartPosition = 4, EndPosition = 5 };
             var actual = _textDocument.Selection.Range;
-            Assert.AreEqual(expected.StartCaretPosition, actual.StartCaretPosition, "StartCaretPosition");
-            Assert.AreEqual(expected.EndCaretPosition, actual.EndCaretPosition, "EndCaretPosition");
+            Assert.AreEqual(expected.StartPosition, actual.StartPosition, "StartPosition");
+            Assert.AreEqual(expected.EndPosition, actual.EndPosition, "EndPosition");
         }
 
         [TestMethod]
         public void Test_AdjustSelectionRight_LeftExtended()
         {
             _textDocument.SetText("Some Text");
-            _textDocument.Selection.SetRange(new CoreTextRange { StartCaretPosition = 3, EndCaretPosition = 4 }, true);
+            _textDocument.Selection.SetRange(new SelectionRange { StartPosition = 3, EndPosition = 4 }, true);
             _textDocument.Actions.AdjustSelectionRight();
 
-            var expected = new CoreTextRange { StartCaretPosition = 4, EndCaretPosition = 4 };
+            var expected = new SelectionRange { StartPosition = 4, EndPosition = 4 };
             var actual = _textDocument.Selection.Range;
-            Assert.AreEqual(expected.StartCaretPosition, actual.StartCaretPosition, "StartCaretPosition");
-            Assert.AreEqual(expected.EndCaretPosition, actual.EndCaretPosition, "EndCaretPosition");
+            Assert.AreEqual(expected.StartPosition, actual.StartPosition, "StartPosition");
+            Assert.AreEqual(expected.EndPosition, actual.EndPosition, "EndPosition");
         }
 
         [TestMethod]
         public void Test_AdjustSelectionRight_RightExtended()
         {
             _textDocument.SetText("Some Text");
-            _textDocument.Selection.SetRange(new CoreTextRange { StartCaretPosition = 4, EndCaretPosition = 5 });
+            _textDocument.Selection.SetRange(new SelectionRange { StartPosition = 4, EndPosition = 5 });
             _textDocument.Actions.AdjustSelectionRight();
 
-            var expected = new CoreTextRange { StartCaretPosition = 4, EndCaretPosition = 6 };
+            var expected = new SelectionRange { StartPosition = 4, EndPosition = 6 };
             var actual = _textDocument.Selection.Range;
-            Assert.AreEqual(expected.StartCaretPosition, actual.StartCaretPosition, "StartCaretPosition");
-            Assert.AreEqual(expected.EndCaretPosition, actual.EndCaretPosition, "EndCaretPosition");
+            Assert.AreEqual(expected.StartPosition, actual.StartPosition, "StartPosition");
+            Assert.AreEqual(expected.EndPosition, actual.EndPosition, "EndPosition");
         }
         #endregion
     }
