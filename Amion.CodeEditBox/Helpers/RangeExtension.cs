@@ -12,14 +12,14 @@ namespace Amion.CodeEditBox.Helpers
 {
     static class RangeExtension
     {
+        public static bool IsEmpty(this CoreTextRange range)
+        {
+            return range.StartCaretPosition == range.EndCaretPosition;
+        }
+
         public static int Size(this CoreTextRange range)
         {
             return range.EndCaretPosition - range.StartCaretPosition;
-        }
-
-        public static SelectionRange ToSelection(this CoreTextRange range, TextBuffer textBuffer)
-        {
-            return textBuffer.TextRangeToSelectionRange(range);
         }
     }
 }

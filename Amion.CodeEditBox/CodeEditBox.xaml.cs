@@ -111,9 +111,7 @@ namespace Amion.CodeEditBox
             TextDisplay_SizeChanged(this, null);
 
             // Set our initial UI.
-            UpdateTextUI();
-            UpdateSelectionUI();
-            UpdateFocusUI();
+            UpdateUI();
         }
 
         private void TextDisplay_SizeChanged(object sender, SizeChangedEventArgs e)
@@ -121,19 +119,28 @@ namespace Amion.CodeEditBox
             CanvasDevice device = CanvasDevice.GetSharedDevice();
             _renderedSelection = new CanvasRenderTarget(device, (float)TextDisplay.ActualWidth, (float)TextDisplay.ActualHeight, TextDisplay.Dpi);
             _renderedText = new CanvasRenderTarget(device, (float)TextDisplay.ActualWidth, (float)TextDisplay.ActualHeight, TextDisplay.Dpi);
+            UpdateUI();
+        }
+
+        private void UpdateUI()
+        {
+            UpdateTextUI(false);
+            UpdateSelectionUI(false);
+            UpdateFocusUI();
+
+            TextDisplay.Invalidate();
         }
 
         private void TextDocument_SelectionChanged(object sender, Document.Events.SelectionChangedEventArgs e)
         {
             // Update the UI to show the new selection.
-            UpdateSelectionUI();
-            
+            UpdateSelectionUI(true);
         }
 
         private void TextDocument_TextChanged(object sender, Document.Events.TextChangedEventArgs e)
         {
             // Update the UI to show the new text.
-            UpdateTextUI();
+            UpdateTextUI(true);
         }
 
         private void CodeEditBox_Unloaded(object sender, RoutedEventArgs e)
@@ -160,19 +167,17 @@ namespace Amion.CodeEditBox
             return new Size(width, height);
         }
 
-        
-
         private void TextDisplay_Draw(CanvasControl sender, CanvasDrawEventArgs args)
         {
             args.DrawingSession.DrawImage(_renderedText, 0, 0);
             args.DrawingSession.DrawImage(_renderedSelection, 0, 0);
         }
 
-        private void UpdateSelectionUI()
+        private void UpdateSelectionUI(bool invalidate)
         {
             var selection = _textDocument.Selection.Range;
 
-            string preSelectionText = _textDocument.TextBuffer.SubstringByTextElements(0, selection.StartPosition);
+            string preSelectionText = _textDocument.TextBuffer.Text.Substring(0, selection.StartCaretPosition);
             Size preSelectionSize = MeasureTextSize(preSelectionText, _textFormat, _renderedSelection.Size);
             
             float height = (float)preSelectionSize.Height;
@@ -183,9 +188,9 @@ namespace Amion.CodeEditBox
 
             if (!selection.IsEmpty())
             {
-                selectionText = _textDocument.TextBuffer.SubstringByTextElements(
-                    selection.StartPosition,
-                    selection.EndPosition - selection.StartPosition);
+                selectionText = _textDocument.TextBuffer.Text.Substring(
+                    selection.StartCaretPosition,
+                    selection.EndCaretPosition - selection.StartCaretPosition);
 
                 Size selectionSize = MeasureTextSize(selectionText, _textFormat, _renderedSelection.Size);
 
@@ -195,22 +200,28 @@ namespace Amion.CodeEditBox
             using (CanvasDrawingSession ds = _renderedSelection.CreateDrawingSession())
             {
                 ds.Clear(Colors.Transparent);
-                ds.FillRectangle(offset, 0, width, height, Colors.DarkBlue);
 
+                if (!selection.IsEmpty() || _internalFocus)
+                {
+                    ds.Antialiasing = CanvasAntialiasing.Aliased;
+                    ds.FillRectangle(offset, 0, width, height, Colors.DarkBlue);
+                }
+                
                 if (!selection.IsEmpty())
                 {
+                    ds.Antialiasing = CanvasAntialiasing.Antialiased;
                     ds.DrawText(selectionText, offset, 0, Colors.White, _textFormat);
                 }
             }
 
-            TextDisplay.Invalidate();
+            if (invalidate) TextDisplay.Invalidate();
 
             // Update statistics for debug purposes.
-            SelectionStartIndexText.Text = selection.StartPosition.ToString();
-            SelectionEndIndexText.Text = selection.EndPosition.ToString();
+            SelectionStartIndexText.Text = selection.StartCaretPosition.ToString();
+            SelectionEndIndexText.Text = selection.EndCaretPosition.ToString();
         }
 
-        private void UpdateTextUI()
+        private void UpdateTextUI(bool invalidate)
         {
             // Render content
             using (CanvasDrawingSession ds = _renderedText.CreateDrawingSession())
@@ -219,7 +230,7 @@ namespace Amion.CodeEditBox
                 ds.DrawText(_textDocument.TextBuffer.Text, 0, 0, Colors.DarkRed, _textFormat);
             }
 
-            TextDisplay.Invalidate();
+            if (invalidate) TextDisplay.Invalidate();
 
             // Update statistics for debug purposes.
             FullText.Text = _textDocument.TextBuffer.Text;

@@ -1,4 +1,5 @@
-﻿using System;
+﻿using Amion.CodeEditBox.Helpers;
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
@@ -8,11 +9,11 @@ namespace Amion.CodeEditBox.Document
 {
     class TextActions
     {
-        TextDocument _textDocument;
+        TextDocument _document;
 
-        public TextActions(TextDocument textDocument)
+        public TextActions(TextDocument document)
         {
-            _textDocument = textDocument;
+            _document = document;
         }
 
         /// <summary>
@@ -20,10 +21,10 @@ namespace Amion.CodeEditBox.Document
         /// </summary>
         public void DeleteSelected()
         {
-            var range = _textDocument.Selection.Range;
+            var range = _document.Selection.Range;
 
             // Set the text in the selection to nothing.
-            _textDocument.ReplaceText(range, "");
+            _document.ReplaceText(range, "");
         }
 
         /// <summary>
@@ -32,14 +33,14 @@ namespace Amion.CodeEditBox.Document
         /// </summary>
         public void DeletePreviousChar()
         {
-            var range = _textDocument.Selection.Range;
+            var range = _document.Selection.Range;
 
             // Delete the character to the left of the caret, if one exists,
             // by creating a range that encloses the character to the left
             // of the caret, and setting the contents of that range to nothing.
-            range.StartPosition = Math.Max(0, range.StartPosition - 1);
-
-            _textDocument.ReplaceText(range, "");
+            int start = _document.TextBuffer.GetIndexWithElementOffset(range.StartCaretPosition, -1);
+            range.StartCaretPosition = start;
+            _document.ReplaceText(range, "");
         }
 
         /// <summary>
@@ -47,19 +48,19 @@ namespace Amion.CodeEditBox.Document
         /// </summary>
         public void StepLeft()
         {
-            var range = _textDocument.Selection.Range;
+            var range = _document.Selection.Range;
 
             // If there was a selection, then snap the caret at the left edge of the selection.
             // TODO: RTL languages?
             if (!range.IsEmpty())
             {
-                range.EndPosition = range.StartPosition;
-                _textDocument.Selection.SetRange(range);
+                _document.Selection.SetPosition(range.StartCaretPosition);
             }
             else
             {
                 // There was no selection. Move the caret left one code unit if possible.
-                _textDocument.Selection.SetRange(new SelectionRange(range.StartPosition - 1));
+                int position = _document.TextBuffer.GetIndexWithElementOffset(range.StartCaretPosition, -1);
+                _document.Selection.SetPosition(position);
             }
         }
 
@@ -68,30 +69,30 @@ namespace Amion.CodeEditBox.Document
         /// </summary>
         public void StepRight()
         {
-            var range = _textDocument.Selection.Range;
+            var range = _document.Selection.Range;
 
             // If there was a selection, then snap the caret at the right edge of the selection.
             // TODO: RTL languages?
             if (!range.IsEmpty())
             {
-                range.StartPosition = range.EndPosition;
-                _textDocument.Selection.SetRange(range);
+                _document.Selection.SetPosition(range.EndCaretPosition);
             }
             else
             {
                 // There was no selection. Move the caret right one code unit if possible.
-                _textDocument.Selection.SetRange(new SelectionRange(range.StartPosition + 1));
+                int position = _document.TextBuffer.GetIndexWithElementOffset(range.StartCaretPosition, +1);
+                _document.Selection.SetPosition(position);
             }
         }
 
         public void AdjustSelectionLeft()
         {
-            _textDocument.Selection.AdjustSelectionEndpoint(-1);
+            _document.Selection.AdjustSelectionEndpoint(-1);
         }
 
         public void AdjustSelectionRight()
         {
-            _textDocument.Selection.AdjustSelectionEndpoint(+1);
+            _document.Selection.AdjustSelectionEndpoint(+1);
         }
     }
 }

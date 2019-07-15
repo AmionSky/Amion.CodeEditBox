@@ -17,17 +17,12 @@ namespace Amion.CodeEditBox
                 _internalFocus = true;
 
                 // Update the UI.
-                UpdateTextUI();
-                UpdateFocusUI();
+                UpdateUI();
 
                 // Notify the CoreTextEditContext that the edit context has focus,
                 // so it should start processing text input.
                 _editContext.NotifyFocusEnter();
             }
-
-            //x Ask the software keyboard to show.  The system will ultimately decide if it will show.
-            //x For example, it will not show if there is a keyboard attached.
-            //x _inputPane.TryShow();
         }
 
         private void RemoveInternalFocus()
@@ -46,12 +41,8 @@ namespace Amion.CodeEditBox
             //Update the internal notion of focus
             _internalFocus = false;
 
-            //x Ask the software keyboard to dismiss.
-            //x _inputPane.TryHide();
-
             // Update our UI.
-            UpdateTextUI();
-            UpdateFocusUI();
+            UpdateUI();
         }
 
         private void EditContext_FocusRemoved(CoreTextEditContext sender, object args)
