@@ -30,17 +30,15 @@ namespace Amion.CodeEditBox
 
             switch (args.VirtualKey)
             {
-                // Backspace
                 case VirtualKey.Back:
                     Key_Backspace();
                     break;
-
-                // Left arrow
+                case VirtualKey.Delete:
+                    Key_Delete();
+                    break;
                 case VirtualKey.Left:
                     Key_LeftArrow();
                     break;
-
-                // Right arrow
                 case VirtualKey.Right:
                     Key_RightArrow();
                     break;
@@ -57,6 +55,19 @@ namespace Amion.CodeEditBox
             else
             {
                 _textDocument.Actions.DeletePreviousChar();
+            }
+        }
+
+        private void Key_Delete()
+        {
+            // If there is a selection, then delete the selection.
+            if (!_textDocument.Selection.Range.IsEmpty())
+            {
+                _textDocument.Actions.DeleteSelected();
+            }
+            else
+            {
+                _textDocument.Actions.DeleteNextChar();
             }
         }
 

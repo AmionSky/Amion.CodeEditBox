@@ -44,6 +44,22 @@ namespace Amion.CodeEditBox.Document
         }
 
         /// <summary>
+        /// Deletes the next (right) char from the caret.
+        /// Selection size is expected to be zero
+        /// </summary>
+        public void DeleteNextChar()
+        {
+            var range = _document.Selection.Range;
+
+            // Delete the character to the right of the caret, if one exists,
+            // by creating a range that encloses the character to the left
+            // of the caret, and setting the contents of that range to nothing.
+            int end = _document.TextBuffer.GetIndexWithElementOffset(range.EndCaretPosition, +1);
+            range.EndCaretPosition = end;
+            _document.ReplaceText(range, "");
+        }
+
+        /// <summary>
         /// Move the caret to the left one char
         /// </summary>
         public void StepLeft()
